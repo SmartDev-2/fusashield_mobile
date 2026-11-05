@@ -1,9 +1,26 @@
 import 'package:flutter/material.dart';
 
+import 'pages/login_page.dart';
 import 'screens/main_screen.dart';
+import 'services/api_service.dart';
 import 'theme/app_colors.dart';
 
-void main() => runApp(const FusaShieldApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.instance.restore();
+  runApp(const FusaShieldApp());
+}
+
+/// Belum login -> halaman login. Sudah login (atau sesi habis lalu logout otomatis) -> otomatis berganti.
+class _Gate extends StatelessWidget {
+  const _Gate();
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: ApiService.loggedIn,
+        builder: (context, ok, child) => ok ? const MainScreen() : const LoginPage(),
+      );
+}
 
 class FusaShieldApp extends StatelessWidget {
   const FusaShieldApp({super.key});
@@ -21,7 +38,7 @@ class FusaShieldApp extends StatelessWidget {
         ),
         fontFamily: 'Roboto',
       ),
-      home: const MainScreen(),
+      home: const _Gate(),
     );
   }
 }

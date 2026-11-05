@@ -5,6 +5,7 @@ import '../pages/detection_page.dart';
 import '../pages/history_page.dart';
 import '../pages/mitigation_page.dart';
 import '../pages/profile_page.dart';
+import '../services/live_store.dart';
 import '../widgets/farm_background.dart';
 import '../widgets/glass_tab_bar.dart';
 
@@ -17,6 +18,18 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    LiveStore.instance.start();
+  }
+
+  @override
+  void dispose() {
+    LiveStore.instance.stop();
+    super.dispose();
+  }
 
   static const _pages = <Widget>[
     DashboardPage(),

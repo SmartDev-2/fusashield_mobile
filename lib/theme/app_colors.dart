@@ -10,6 +10,21 @@ class AppColors {
   static const muted = Color(0xFF6B7C73);
 }
 
+Color dosisColor(String? tingkat) {
+  switch (tingkat?.toUpperCase()) {
+    case 'AMAN':
+      return Colors.green;
+    case 'PREVENTIF':
+      return Colors.amber;
+    case 'WASPADA':
+      return Colors.orange;
+    case 'KRITIS':
+      return Colors.red;
+    default:
+      return Colors.grey;
+  }
+}
+
 extension ColorAlpha on Color {
   /// Versi ringkas withOpacity (aman di semua versi Flutter).
   Color o(double opacity) => withAlpha((opacity * 255).round());

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/live_store.dart';
 import '../theme/app_colors.dart';
 import '../widgets/glass_group.dart';
 import '../widgets/list_row.dart';
@@ -21,7 +22,11 @@ class _MitigationPageState extends State<MitigationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return PageScaffold(
+    return ListenableBuilder(
+      listenable: LiveStore.instance,
+      builder: (context, _) {
+        final s = LiveStore.instance;
+        return PageScaffold(
       children: [
         const LargeTitle(
           title: 'Mitigasi\nTanaman',
@@ -83,8 +88,7 @@ class _MitigationPageState extends State<MitigationPage> {
                 label: 'Lihat Rekomendasi',
                 icon: Icons.auto_awesome_rounded,
                 style: PillStyle.white,
-                onTap: () =>
-                    showInfo(context, 'Belum ada hasil analisis tanaman.'),
+                onTap: () => showInfo(context, s.recommendation),
               ),
             ],
           ),
@@ -100,11 +104,11 @@ class _MitigationPageState extends State<MitigationPage> {
             ListRow(
               icon: Icons.water_drop_rounded,
               title: 'Irigasi otomatis',
-              subtitle: 'Menunggu data perangkat',
+              subtitle: s.pumpSummary,
               color: Colors.blue,
               trailing: Switch.adaptive(
                 value: _autoIrrigation,
-                activeColor: AppColors.accent,
+                activeTrackColor: AppColors.accent,
                 onChanged: (v) {
                   HapticFeedback.selectionClick();
                   setState(() => _autoIrrigation = v);
@@ -114,11 +118,11 @@ class _MitigationPageState extends State<MitigationPage> {
             ListRow(
               icon: Icons.psychology_rounded,
               title: 'Peringatan AI',
-              subtitle: 'Belum ada hasil analisis',
+              subtitle: s.analysisSummary,
               color: Colors.deepPurple,
               trailing: Switch.adaptive(
                 value: _aiAlerts,
-                activeColor: AppColors.accent,
+                activeTrackColor: AppColors.accent,
                 onChanged: (v) {
                   HapticFeedback.selectionClick();
                   setState(() => _aiAlerts = v);
@@ -132,9 +136,11 @@ class _MitigationPageState extends State<MitigationPage> {
           label: 'Siram Sekarang',
           icon: Icons.shower_rounded,
           style: PillStyle.glass,
-          onTap: () => showInfo(context, 'Menunggu koneksi ke pompa.'),
+          onTap: () => showInfo(context, 'Penyiraman manual belum tersedia. Pompa dijalankan otomatis oleh sistem fuzzy.'),
         ),
       ],
+    );
+      },
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/api_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../widgets/app_logo.dart';
@@ -61,6 +62,13 @@ class ProfilePage extends StatelessWidget {
           label: 'Periksa Pembaruan',
           icon: Icons.system_update_rounded,
           onTap: () => showInfo(context, 'Aplikasi sudah versi terbaru.'),
+        ),
+        const SizedBox(height: 12),
+        PillButton(
+          label: 'Keluar',
+          icon: Icons.logout_rounded,
+          style: PillStyle.glass,
+          onTap: () => ApiService.instance.logout(),
         ),
       ],
     );
