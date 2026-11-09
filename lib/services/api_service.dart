@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,130 +15,121 @@ class ApiService {
   ApiService._();
   static final ApiService instance = ApiService._();
 
-  static const String _defaultUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: kIsWeb ? 'http://localhost:5000' : 'http://10.0.2.2:5000',
-  );
-  static String baseUrl = _defaultUrl;
+  /// Endpoint ada di folder api/ pada proyek Vercel (api/mobile/status.js, dst.).
+  static const String baseUrl = 'https://fusashield.vercel.app/api';
+
+  /// Kunci aplikasi (opsional, harus sama dengan MOBILE_APP_KEY di Vercel). Jangan ditulis di kode:
+  ///   flutter run --dart-define=APP_KEY=isi-kunci
+  /// Catatan: kunci ini tetap bisa diambil dari aplikasi yang di-decompile. Untuk akses lebih aman pakai login().
+  static const String _appKey = String.fromEnvironment('APP_KEY');
+
+  String? _token;
 
   // ============ PERSISTENCE ============
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    baseUrl = prefs.getString('base_url') ?? _defaultUrl;
+    final p = await SharedPreferences.getInstance();
+    _token = p.getString('token');
   }
 
   /// Alias init
   Future<void> restore() => init();
 
-  Future<void> setBaseUrl(String url) async {
-    String cleaned = url.trim().replaceAll(RegExp(r'^[=\s]+'), '').replaceAll(RegExp(r'/+$'), '');
-    if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
-      cleaned = 'http://$cleaned';
-    }
-    baseUrl = cleaned;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('base_url', baseUrl);
+  bool get isLoggedIn => _token != null;
+
+  // ============ LOGIN (opsional) ============
+  Future<void> login(String username, String password) async {
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/mobile/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'username': username, 'password': password}),
+        )
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) throw _error(res);
+    _token = (jsonDecode(res.body) as Map<String, dynamic>)['token'] as String;
+    final p = await SharedPreferences.getInstance();
+    await p.setString('token', _token!);
   }
 
-  // ============ STATUS / MONITORING ============
-  Future<Map<String, dynamic>> getStatus() async {
-    final res = await http
-        .get(Uri.parse('$baseUrl/mobile/status'))
-        .timeout(const Duration(seconds: 15));
+  Future<void> logout() async {
+    _token = null;
+    final p = await SharedPreferences.getInstance();
+    await p.remove('token');
+  }
 
+  Map<String, String> _headers([Map<String, String>? extra]) => {
+        if (_appKey.isNotEmpty) 'X-API-KEY': _appKey,
+        if (_token != null) 'Authorization': 'Bearer $_token',
+        ...?extra,
+      };
+
+  Future<Map<String, dynamic>> _getJson(String path) async {
+    final res = await http
+        .get(Uri.parse('$baseUrl$path'), headers: _headers())
+        .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) throw _error(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
+
+  // ============ STATUS / MONITORING ============
+  Future<Map<String, dynamic>> getStatus() => _getJson('/mobile/status');
 
   /// Alias untuk getStatus
   Future<Map<String, dynamic>> status() => getStatus();
 
   // ============ HISTORY ============
-  Future<List<Map<String, dynamic>>> getHistory({int limit = 30}) async {
-    final res = await http
-        .get(Uri.parse('$baseUrl/mobile/history?limit=$limit'))
-        .timeout(const Duration(seconds: 15));
+  /// Format respons mentah history ({items: [...]})
+  Future<Map<String, dynamic>> history({int limit = 30}) =>
+      _getJson('/mobile/history?limit=$limit');
 
-    if (res.statusCode != 200) throw _error(res);
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+  Future<List<Map<String, dynamic>>> getHistory({int limit = 30}) async {
+    final data = await history(limit: limit);
     final items = data['items'] as List? ?? [];
     return List<Map<String, dynamic>>.from(items);
   }
 
-  /// Format respons mentah history
-  Future<Map<String, dynamic>> history({int limit = 30}) async {
+  // ============ UPLOAD FOTO ============
+  /// Menerima Uint8List, XFile (image_picker), atau File. Dikirim sebagai bytes mentah (bukan multipart).
+  /// Server menyimpannya ke Supabase; hasil CNN muncul di status() setelah diproses layanan Keras.
+  /// Mengembalikan {path, photo_url}.
+  Future<Map<String, dynamic>> uploadPhoto(dynamic imageFile) async {
+    final bytes = await _bytesOf(imageFile);
+    if (bytes.isEmpty) throw ApiException('Foto kosong.');
+    if (bytes.length > 4 * 1024 * 1024) {
+      throw ApiException('Foto terlalu besar (maksimal 4 MB).');
+    }
     final res = await http
-        .get(Uri.parse('$baseUrl/mobile/history?limit=$limit'))
-        .timeout(const Duration(seconds: 15));
-
+        .post(
+          Uri.parse('$baseUrl/mobile/upload'),
+          headers: _headers({'Content-Type': 'image/jpeg'}), // tipe asli dideteksi server dari isi file
+          body: bytes,
+        )
+        .timeout(const Duration(seconds: 90));
     if (res.statusCode != 200) throw _error(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  // ============ UPLOAD FOTO ============
-  Future<Map<String, dynamic>> uploadPhoto(dynamic imageFile) async {
-    final req = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/mobile/upload'),
-    );
-
-    if (imageFile is Uint8List) {
-      req.files.add(http.MultipartFile.fromBytes(
-        'file',
-        imageFile,
-        filename: 'daun_cabai.jpg',
-      ));
-    } else if (imageFile != null && imageFile.runtimeType.toString().contains('XFile')) {
-      final bytes = await imageFile.readAsBytes();
-      final name = (imageFile.name as String?)?.isNotEmpty == true
-          ? imageFile.name as String
-          : 'daun_cabai.jpg';
-      req.files.add(http.MultipartFile.fromBytes(
-        'file',
-        bytes,
-        filename: name,
-      ));
-    } else if (imageFile is File) {
-      if (kIsWeb) {
-        final bytes = await imageFile.readAsBytes();
-        req.files.add(http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: 'daun_cabai.jpg',
-        ));
-      } else {
-        req.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-      }
-    } else {
-      try {
-        final bytes = await (imageFile as dynamic).readAsBytes();
-        req.files.add(http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: 'daun_cabai.jpg',
-        ));
-      } catch (_) {
-        throw ApiException('Format gambar tidak didukung.');
-      }
+  Future<Uint8List> _bytesOf(dynamic image) async {
+    if (image is Uint8List) return image;
+    try {
+      // XFile dan File sama-sama punya readAsBytes() (aman juga untuk Flutter Web)
+      final data = await (image as dynamic).readAsBytes();
+      return Uint8List.fromList(List<int>.from(data as List));
+    } catch (_) {
+      throw ApiException('Format gambar tidak didukung.');
     }
-
-    final streamed = await req.send().timeout(const Duration(seconds: 90));
-    final res = await http.Response.fromStream(streamed);
-
-    if (res.statusCode != 200) throw _error(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
   // ============ TRIGGER POMPA MANUAL ============
+  /// BELUM ADA di server (api/pump/trigger.js belum dibuat), jadi saat ini akan menghasilkan error 404.
   Future<Map<String, dynamic>> triggerPump({double? dosisMl}) async {
     final res = await http
         .post(
-          Uri.parse('$baseUrl/api/pump/trigger'),
-          headers: {'Content-Type': 'application/json'},
+          Uri.parse('$baseUrl/pump/trigger'),
+          headers: _headers({'Content-Type': 'application/json'}),
           body: jsonEncode(dosisMl != null ? {'dosis_ml': dosisMl} : {}),
         )
         .timeout(const Duration(seconds: 15));
-
     if (res.statusCode != 200) throw _error(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
@@ -154,8 +144,10 @@ class ApiService {
 
   // ============ HELPERS ============
   ApiException _error(http.Response res) {
+    if (res.statusCode == 401 && _token != null) logout(); // token kedaluwarsa
     try {
-      final msg = jsonDecode(res.body)['detail'] ?? jsonDecode(res.body)['message'];
+      final body = jsonDecode(res.body);
+      final msg = body['detail'] ?? body['message'];
       return ApiException((msg ?? 'Error ${res.statusCode}').toString());
     } catch (_) {
       return ApiException('Error ${res.statusCode}');
