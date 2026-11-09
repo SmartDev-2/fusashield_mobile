@@ -21,7 +21,7 @@ class ApiService {
   /// Kunci aplikasi (opsional, harus sama dengan MOBILE_APP_KEY di Vercel). Jangan ditulis di kode:
   ///   flutter run --dart-define=APP_KEY=isi-kunci
   /// Catatan: kunci ini tetap bisa diambil dari aplikasi yang di-decompile. Untuk akses lebih aman pakai login().
-  static const String _appKey = String.fromEnvironment('APP_KEY');
+  static const String _appKey = 'bXfbIXRQ8vmETKptnwq3aToDI2BOfKFe1ptLnEg0b5o';
 
   String? _token;
 
@@ -101,7 +101,9 @@ class ApiService {
     final res = await http
         .post(
           Uri.parse('$baseUrl/mobile/upload'),
-          headers: _headers({'Content-Type': 'image/jpeg'}), // tipe asli dideteksi server dari isi file
+          headers: _headers({
+            'Content-Type': 'image/jpeg'
+          }), // tipe asli dideteksi server dari isi file
           body: bytes,
         )
         .timeout(const Duration(seconds: 90));
