@@ -54,7 +54,7 @@ class FarmBackground extends StatelessWidget {
     width: double.infinity,
     height: double.infinity,
     // Kalau foto belum ditambahkan, tampil background gradient lama.
-    errorBuilder: (_, _, _) => const AuroraBackground(),
+    errorBuilder: (context, error, stackTrace) => const AuroraBackground(),
   );
 
   @override
