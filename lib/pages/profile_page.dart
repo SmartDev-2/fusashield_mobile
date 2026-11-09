@@ -5,7 +5,6 @@ import '../services/live_store.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../widgets/app_logo.dart';
-import '../widgets/glass_card.dart';
 import '../widgets/glass_group.dart';
 import '../widgets/list_row.dart';
 import '../widgets/page_layout.dart';
@@ -20,8 +19,8 @@ class ProfilePage extends StatelessWidget {
     return PageScaffold(
       children: [
         const LargeTitle(
-          title: 'Tentang & Sistem',
-          subtitle: 'Informasi sistem dan status cloud FusaShield.',
+          title: 'Tentang & Profil',
+          subtitle: 'Informasi sistem FusaShield.',
         ),
         const SizedBox(height: 24),
         const Center(
@@ -39,56 +38,40 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 4),
-              Text('Smart Chili Monitoring System', style: AppText.body),
+              Text('Sistem Mitigasi Presisi Layu Fusarium', style: AppText.body),
             ],
           ),
         ),
         const SizedBox(height: 28),
-        GlassCard(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withAlpha(15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.primary.withAlpha(40)),
+          ),
+          child: Row(
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.cloud_done_rounded, color: AppColors.primary, size: 22),
-                  SizedBox(width: 8),
-                  Text(
-                    'Cloud Endpoint Terhubung',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Aplikasi terhubung langsung ke layanan cloud produksi FusaShield:',
-                style: AppText.caption,
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(160),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.black.withAlpha(20)),
-                ),
-                child: const Row(
+              const Icon(Icons.cloud_done_rounded,
+                  color: AppColors.primary, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.link_rounded, size: 18, color: AppColors.muted),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        ApiService.baseUrl,
+                    const Text('Cloud Server',
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
+                          fontSize: 12,
+                          color: AppColors.muted,
+                          fontWeight: FontWeight.w500,
+                        )),
+                    Text(
+                      ApiService.baseUrl,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -108,12 +91,12 @@ class ProfilePage extends StatelessWidget {
             ListRow(
               icon: Icons.verified_user_rounded,
               title: 'Arsitektur Sistem',
-              subtitle: '1 Petani • 1 Perangkat • 1 Dedicated Cloud',
+              subtitle: '1 Petani · 1 Perangkat · 1 Dedicated Cloud',
             ),
             ListRow(
               icon: Icons.developer_mode_rounded,
               title: 'Versi Aplikasi',
-              subtitle: 'Version 1.0.0 (Cloud Connected)',
+              subtitle: 'Version 1.0.0',
               color: Colors.deepPurple,
             ),
           ],
@@ -129,8 +112,8 @@ class ProfilePage extends StatelessWidget {
               showInfo(
                 context,
                 ok
-                    ? 'Koneksi ke cloud aktif & data berhasil diperbarui.'
-                    : 'Gagal menghubungi cloud (${ApiService.baseUrl}). Periksa koneksi internet Anda.',
+                    ? 'Koneksi aktif! Server merespons normal.'
+                    : 'Gagal terhubung. Periksa koneksi internet.',
               );
             }
           },
