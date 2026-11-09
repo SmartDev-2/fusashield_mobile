@@ -18,11 +18,12 @@ class GlassSegmented extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 46,
+      height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.primary.o(0.08),
-        borderRadius: BorderRadius.circular(23),
+        color: Colors.black.o(0.35),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.o(0.10), width: 1),
       ),
       child: LayoutBuilder(
         builder: (context, c) {
@@ -39,13 +40,22 @@ class GlassSegmented extends StatelessWidget {
                 width: w,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(19),
+                    color: const Color(0xFF243B30),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.primary.o(0.40),
+                      width: 1,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.o(0.10),
+                        color: Colors.black.o(0.45),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
+                      ),
+                      BoxShadow(
+                        color: AppColors.primary.o(0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 1),
                       ),
                     ],
                   ),
@@ -68,7 +78,7 @@ class GlassSegmented extends StatelessWidget {
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: i == index
-                                  ? AppColors.primary
+                                  ? AppColors.ink
                                   : AppColors.muted,
                             ),
                             child: Text(labels[i]),

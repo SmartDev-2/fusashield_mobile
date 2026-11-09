@@ -27,7 +27,7 @@ class PillButton extends StatelessWidget {
     final BoxDecoration deco;
 
     if (style == PillStyle.primary) {
-      fg = Colors.white;
+      fg = const Color(0xFF04140D);
       deco = BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -38,36 +38,42 @@ class PillButton extends StatelessWidget {
         border: Border.all(color: Colors.white.o(0.35)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.o(0.38),
+            color: AppColors.primary.o(0.40),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
         ],
       );
     } else if (style == PillStyle.white) {
-      fg = AppColors.primary;
+      fg = const Color(0xFF081C13);
       deco = BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFE6F4ED),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.o(0.15),
+            color: Colors.black.o(0.35),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       );
     } else {
-      fg = AppColors.primary;
+      // Glass button di dark mode
+      fg = AppColors.ink;
       deco = BoxDecoration(
-        color: Colors.white.o(0.65),
+        color: const Color(0xFF1E3328).o(0.60),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white, width: 1.2),
+        border: Border.all(color: Colors.white.o(0.18), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.o(0.08),
+            color: Colors.black.o(0.30),
             blurRadius: 18,
             offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: AppColors.primary.o(0.10),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
           ),
         ],
       );

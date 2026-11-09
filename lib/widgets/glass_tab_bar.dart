@@ -91,8 +91,11 @@ class _TabButton extends StatelessWidget {
           vertical: 11,
         ),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.o(0.12) : Colors.transparent,
+          color: selected ? AppColors.primary.o(0.20) : Colors.transparent,
           borderRadius: BorderRadius.circular(28),
+          border: selected
+              ? Border.all(color: AppColors.primary.o(0.35), width: 1)
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

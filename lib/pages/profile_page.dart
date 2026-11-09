@@ -108,11 +108,20 @@ class _ProfilePageState extends State<ProfilePage> {
               TextField(
                 controller: _serverController,
                 keyboardType: TextInputType.url,
+                style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w600),
                 decoration: InputDecoration(
                   hintText: 'http://192.168.1.100:5000',
+                  hintStyle: const TextStyle(color: AppColors.muted),
+                  filled: true,
+                  fillColor: Colors.black.o(0.25),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  border: OutlineInputBorder(
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.white.o(0.12)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                   ),
                 ),
               ),

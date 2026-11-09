@@ -34,11 +34,12 @@ class _HistoryPageState extends State<HistoryPage> {
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF13221B),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: Border.all(color: Colors.white.o(0.12)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.o(0.15),
+              color: Colors.black.o(0.45),
               blurRadius: 30,
               offset: const Offset(0, -6),
             ),
@@ -53,7 +54,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 width: 48,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.black12,
+                  color: Colors.white.o(0.20),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -180,8 +181,9 @@ class _HistoryPageState extends State<HistoryPage> {
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.primary.o(0.06),
+        color: Colors.white.o(0.06),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.o(0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

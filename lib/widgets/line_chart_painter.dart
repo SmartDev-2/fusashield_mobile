@@ -18,7 +18,7 @@ class LineChartPainter extends CustomPainter {
     const pad = 8.0;
 
     final grid = Paint()
-      ..color = AppColors.primary.o(0.08)
+      ..color = Colors.white.o(0.08)
       ..strokeWidth = 1;
     for (var i = 0; i < 4; i++) {
       final y = size.height * i / 3;
@@ -52,7 +52,7 @@ class LineChartPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [color.o(0.32), color.o(0)],
+          colors: [color.o(0.38), color.o(0)],
         ).createShader(Offset.zero & size),
     );
 

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'glass_card.dart';
 
-/// Daftar ala iOS "inset grouped".
+/// Daftar ala iOS "inset grouped" versi dark glassmorphism.
 class GlassGroup extends StatelessWidget {
   final List<Widget> children;
 
@@ -22,7 +22,7 @@ class GlassGroup extends StatelessWidget {
                 height: 1,
                 thickness: 1,
                 indent: 70,
-                color: AppColors.primary.o(0.08),
+                color: Colors.white.o(0.08),
               ),
             children[i],
           ],

@@ -3,25 +3,29 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  static const primary = Color(0xFF145C42);
-  static const primaryLight = Color(0xFF1F8A62);
-  static const accent = Color(0xFF43B581);
-  static const ink = Color(0xFF10231B);
-  static const muted = Color(0xFF6B7C73);
+  // Dark Mode Palette
+  static const primary = Color(0xFF2EC486);
+  static const primaryLight = Color(0xFF4EE3A2);
+  static const primaryDark = Color(0xFF145C42);
+  static const accent = Color(0xFF38E1A1);
+  static const ink = Color(0xFFF1F7F4);
+  static const muted = Color(0xFF8DA69A);
+  static const darkBg = Color(0xFF080F0C);
+  static const darkSurface = Color(0xFF13221B);
 }
 
 Color dosisColor(String? tingkat) {
   switch (tingkat?.toUpperCase()) {
     case 'AMAN':
-      return Colors.green;
+      return const Color(0xFF34D399);
     case 'PREVENTIF':
-      return Colors.amber;
+      return const Color(0xFFFBBF24);
     case 'WASPADA':
-      return Colors.orange;
+      return const Color(0xFFFB923C);
     case 'KRITIS':
-      return Colors.red;
+      return const Color(0xFFF87171);
     default:
-      return Colors.grey;
+      return const Color(0xFF94A3B8);
   }
 }
 

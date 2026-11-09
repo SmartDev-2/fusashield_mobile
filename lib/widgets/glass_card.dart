@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'pressable_scale.dart';
 
-/// Kartu "Liquid Glass": blur + gradient putih transparan + border tipis.
+/// Kartu "Liquid Glass" Dark Mode: blur + gradient gelap obsidian transparan + border specular tipis.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -29,16 +29,21 @@ class GlassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.o(elevated ? 0.18 : 0.08),
-            blurRadius: elevated ? 36 : 28,
-            offset: Offset(0, elevated ? 14 : 10),
+            color: Colors.black.o(elevated ? 0.50 : 0.32),
+            blurRadius: elevated ? 36 : 24,
+            offset: Offset(0, elevated ? 16 : 10),
+          ),
+          BoxShadow(
+            color: AppColors.primary.o(elevated ? 0.14 : 0.06),
+            blurRadius: elevated ? 28 : 16,
+            offset: Offset(0, elevated ? 4 : 2),
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
@@ -46,9 +51,15 @@ class GlassCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Colors.white.o(0.80), Colors.white.o(0.46)],
+                colors: [
+                  const Color(0xFF1E3328).o(0.72),
+                  const Color(0xFF0F1A15).o(0.56),
+                ],
               ),
-              border: Border.all(color: Colors.white.o(0.9), width: 1),
+              border: Border.all(
+                color: Colors.white.o(0.14),
+                width: 1.0,
+              ),
             ),
             child: child,
           ),

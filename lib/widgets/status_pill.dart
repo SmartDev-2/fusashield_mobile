@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// Pill status dengan titik yang berdenyut.
+/// Pill status dark glass dengan titik yang berdenyut neon.
 class StatusPill extends StatefulWidget {
   final String label;
 
@@ -30,8 +30,16 @@ class _StatusPillState extends State<StatusPill>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.o(0.95),
+        color: const Color(0xFF0D1D16).o(0.88),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.o(0.40), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.o(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -58,7 +66,7 @@ class _StatusPillState extends State<StatusPill>
           Text(
             widget.label,
             style: const TextStyle(
-              color: AppColors.primary,
+              color: AppColors.ink,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.6,

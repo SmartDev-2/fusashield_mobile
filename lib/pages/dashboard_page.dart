@@ -158,7 +158,7 @@ class DashboardPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Divider(height: 1, thickness: 1, color: Color(0x15000000)),
+                  Divider(height: 1, thickness: 1, color: Colors.white.o(0.08)),
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -170,13 +170,13 @@ class DashboardPage extends StatelessWidget {
                           color: AppColors.primary,
                         ),
                       ),
-                      Container(width: 1, height: 42, color: const Color(0x15000000)),
+                      Container(width: 1, height: 42, color: Colors.white.o(0.08)),
                       Expanded(
                         child: _MetricItem(
                           label: 'Dosis Aktual Pompa',
                           value: '${LiveStore.fmt(s.dosisAktual)} ml',
                           icon: Icons.water_drop_rounded,
-                          color: (s.dosisAktual ?? 0) > 0 ? Colors.green : Colors.grey,
+                          color: (s.dosisAktual ?? 0) > 0 ? const Color(0xFF34D399) : Colors.grey,
                         ),
                       ),
                     ],
@@ -187,13 +187,13 @@ class DashboardPage extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.blueGrey.o(0.08),
+                        color: Colors.blueGrey.o(0.18),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.blueGrey.o(0.2)),
+                        border: Border.all(color: Colors.blueGrey.o(0.35)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.timer_outlined, size: 18, color: Colors.blueGrey),
+                          const Icon(Icons.timer_outlined, size: 18, color: Color(0xFF93C5FD)),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -215,8 +215,9 @@ class DashboardPage extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.o(0.07),
+                        color: AppColors.primary.o(0.12),
                         borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.primary.o(0.20)),
                       ),
                       child: Row(
                         children: [
@@ -392,9 +393,10 @@ class DashboardPage extends StatelessWidget {
   Future<void> _showQuickScanPicker(BuildContext context) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      backgroundColor: const Color(0xFF13221B),
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        side: BorderSide(color: Colors.white.o(0.12)),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
@@ -406,7 +408,7 @@ class DashboardPage extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: Colors.white.o(0.20),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -422,14 +424,14 @@ class DashboardPage extends StatelessWidget {
               const SizedBox(height: 18),
               ListTile(
                 leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
-                title: const Text('Ambil Foto Kamera', style: TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: const Text('Scan langsung dari tanaman'),
+                title: const Text('Ambil Foto Kamera', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink)),
+                subtitle: const Text('Scan langsung dari tanaman', style: TextStyle(color: AppColors.muted)),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
-                title: const Text('Pilih dari Galeri', style: TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: const Text('Unggah berkas foto daun tersimpan'),
+                title: const Text('Pilih dari Galeri', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink)),
+                subtitle: const Text('Unggah berkas foto daun tersimpan', style: TextStyle(color: AppColors.muted)),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
               ),
             ],
@@ -576,13 +578,19 @@ class _DeviceHero extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.primaryLight, AppColors.primary],
+          colors: [Color(0xFF1B4E38), Color(0xFF0F2E22)],
         ),
+        border: Border.all(color: AppColors.primary.o(0.35), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.o(0.40),
-            blurRadius: 34,
-            offset: const Offset(0, 18),
+            color: Colors.black.o(0.45),
+            blurRadius: 32,
+            offset: const Offset(0, 16),
+          ),
+          BoxShadow(
+            color: AppColors.primary.o(0.18),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
         ],
       ),

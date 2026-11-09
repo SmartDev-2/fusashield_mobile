@@ -93,8 +93,8 @@ class _DetectionPageState extends State<DetectionPage> {
                       width: double.infinity,
                       height: 190,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.o(0.08),
-                        border: Border.all(color: Colors.white, width: 2),
+                        color: Colors.black.o(0.25),
+                        border: Border.all(color: Colors.white.o(0.14), width: 1.5),
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: _lastPickedBytes != null

@@ -41,13 +41,19 @@ class _MitigationPageState extends State<MitigationPage> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.primaryLight, AppColors.primary],
+              colors: [Color(0xFF1B4E38), Color(0xFF0F2E22)],
             ),
+            border: Border.all(color: AppColors.primary.o(0.35), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.o(0.40),
-                blurRadius: 34,
-                offset: const Offset(0, 18),
+                color: Colors.black.o(0.45),
+                blurRadius: 32,
+                offset: const Offset(0, 16),
+              ),
+              BoxShadow(
+                color: AppColors.primary.o(0.18),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
               ),
             ],
           ),

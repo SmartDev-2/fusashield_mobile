@@ -223,14 +223,15 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
 
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13221B),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(color: Colors.white.o(0.12)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black26,
+            color: Colors.black.o(0.45),
             blurRadius: 36,
-            offset: Offset(0, -10),
+            offset: const Offset(0, -10),
           ),
         ],
       ),
@@ -244,7 +245,7 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
               width: 44,
               height: 5,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: Colors.white.o(0.20),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -442,9 +443,9 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.primary.o(0.05),
+            color: Colors.white.o(0.04),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.primary.o(0.15)),
+            border: Border.all(color: Colors.white.o(0.10)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,12 +458,12 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.deepPurple.o(0.12),
+                      color: const Color(0xFFC084FC).o(0.18),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '${LiveStore.fmt(confidence)}% Akurasi',
-                      style: const TextStyle(color: Colors.deepPurple, fontSize: 12, fontWeight: FontWeight.w700),
+                      style: const TextStyle(color: Color(0xFFC084FC), fontSize: 12, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
@@ -581,9 +582,9 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.white.o(0.04),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.black12),
+            border: Border.all(color: Colors.white.o(0.10)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,

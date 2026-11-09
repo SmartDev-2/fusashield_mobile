@@ -13,7 +13,7 @@ class AuroraBackground extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFE3F4EA), Color(0xFFF7FAF7)],
+            colors: [Color(0xFF09140F), Color(0xFF050A08)],
           ),
         ),
         child: IgnorePointer(
@@ -22,20 +22,20 @@ class AuroraBackground extends StatelessWidget {
               _blob(
                 top: -90,
                 right: -70,
-                size: 300,
-                color: AppColors.accent.o(0.40),
+                size: 320,
+                color: AppColors.primary.o(0.24),
               ),
               _blob(
                 top: 280,
                 left: -130,
-                size: 320,
-                color: const Color(0xFF7DD3FC).o(0.30),
+                size: 340,
+                color: const Color(0xFF0EA5E9).o(0.16),
               ),
               _blob(
                 bottom: 40,
                 right: -90,
-                size: 280,
-                color: const Color(0xFFFDE68A).o(0.35),
+                size: 300,
+                color: const Color(0xFF10B981).o(0.18),
               ),
             ],
           ),
