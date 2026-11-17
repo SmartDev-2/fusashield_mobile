@@ -5,33 +5,33 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/prediction_result.dart';
+import '../pages/results_page.dart';
 import '../services/api_service.dart';
 import '../services/live_store.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
+import 'farm_background.dart';
+import 'glass_icon_button.dart';
 import 'pill_button.dart';
+import 'prediction_card.dart';
 
 enum _AnalysisStage {
   uploading,
   analyzing,
   completed,
-  timeout,
   error,
 }
 
 class AnalysisBottomSheet extends StatefulWidget {
   final XFile imageFile;
   final Uint8List? previewBytes;
-  final String? initialLastUpdated;
-  final String? initialPhotoUrl;
   final VoidCallback? onCompleted;
 
   const AnalysisBottomSheet({
     super.key,
     required this.imageFile,
     this.previewBytes,
-    this.initialLastUpdated,
-    this.initialPhotoUrl,
     this.onCompleted,
   });
 
@@ -41,7 +41,6 @@ class AnalysisBottomSheet extends StatefulWidget {
     Uint8List? previewBytes,
     VoidCallback? onCompleted,
   }) {
-    final live = LiveStore.instance;
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -50,8 +49,6 @@ class AnalysisBottomSheet extends StatefulWidget {
       builder: (ctx) => AnalysisBottomSheet(
         imageFile: imageFile,
         previewBytes: previewBytes,
-        initialLastUpdated: live.lastUpdated,
-        initialPhotoUrl: live.photoUrl,
         onCompleted: onCompleted,
       ),
     );
@@ -69,7 +66,22 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
   Timer? _pollingTimer;
   int _secondsElapsed = 0;
   Timer? _elapsedTimer;
+  bool _statusCheckInProgress = false;
   Uint8List? _bytes;
+  PredictionItem? _latestPrediction;
+  bool _isLoadingPrediction = false;
+
+  bool _matchesUploadedPhoto(String? candidate, String? uploadedPath) {
+    if (candidate == null || uploadedPath == null) return false;
+    final cleanCandidate = candidate.split('?').first;
+    final cleanUploadedPath = uploadedPath.split('?').first;
+    final candidateName = cleanCandidate.split('/').last;
+    final uploadedName = cleanUploadedPath.split('/').last;
+    return cleanCandidate == cleanUploadedPath ||
+        (candidateName.isNotEmpty &&
+            uploadedName.isNotEmpty &&
+            candidateName == uploadedName);
+  }
 
   @override
   void initState() {
@@ -111,33 +123,72 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
       if (!mounted) return;
 
       final photoUrl = uploadRes['photo_url']?.toString();
+      final uploadedPath = uploadRes['path']?.toString();
       setState(() {
         _stage = _AnalysisStage.analyzing;
         _uploadedPhotoUrl = photoUrl;
+        _isLoadingPrediction = true;
       });
 
-      // 2. Polling berkala (tiap 2.5 detik) ke GET /mobile/status
-      int attempts = 0;
-      const maxAttempts = 16; // 16 x 2.5s = ~40 detik
-      _pollingTimer?.cancel();
-      _pollingTimer = Timer.periodic(const Duration(milliseconds: 2500), (timer) async {
-        attempts++;
+      // 2. Cek hasil segera, lalu polling sampai hasil foto ini tersedia.
+      // Popup selesai hanya dibuka setelah hasil FusaShield dan klasifikasi
+      // penyakit dari API predictions sama-sama menunjuk foto ini.
+      Future<void> checkStatus() async {
+        if (!mounted || _statusCheckInProgress) return;
+        _statusCheckInProgress = true;
         try {
           final statusRes = await ApiService.instance.getStatus();
-          final decision = (statusRes['decision'] as Map?)?.cast<String, dynamic>() ?? {};
-          final newLastUpdated = decision['last_updated']?.toString();
+          final decision =
+              (statusRes['decision'] as Map?)?.cast<String, dynamic>() ?? {};
           final newPhotoUrl = statusRes['photo_url']?.toString();
+          final fotoSumber = decision['foto_sumber']?.toString();
 
-          // Cek apakah data terbaru sudah masuk di backend
-          final hasUpdatedTime = newLastUpdated != null &&
-              newLastUpdated.isNotEmpty &&
-              newLastUpdated != widget.initialLastUpdated;
+          // Ekstrak nama file unik tanpa query params
+          final uploadedName = photoUrl?.split('/').last.split('?').first;
+          final currentPhotoName =
+              newPhotoUrl?.split('/').last.split('?').first;
+          final currentSumberName =
+              fotoSumber?.split('/').last.split('?').first;
 
-          final hasMatchedPhoto = (photoUrl != null && newPhotoUrl != null && newPhotoUrl.contains(photoUrl.split('/').last)) ||
-              (newPhotoUrl != null && widget.initialPhotoUrl != null && newPhotoUrl != widget.initialPhotoUrl);
+          final hasMatchedPhoto = (uploadedName != null &&
+                  currentPhotoName != null &&
+                  (currentPhotoName.contains(uploadedName) ||
+                      uploadedName.contains(currentPhotoName))) ||
+              (uploadedName != null &&
+                  currentSumberName != null &&
+                  (currentSumberName.contains(uploadedName) ||
+                      uploadedName.contains(currentSumberName)));
 
-          if (hasUpdatedTime || hasMatchedPhoto) {
-            timer.cancel();
+          PredictionItem? prediction;
+          try {
+            final predictionRes =
+                await ApiService.instance.getLatestPrediction();
+            final rawPrediction = predictionRes['latest'];
+            if (rawPrediction is Map) {
+              final parsed = PredictionItem.fromJson(
+                rawPrediction.cast<String, dynamic>(),
+              );
+              if (_matchesUploadedPhoto(parsed.imagePath, uploadedPath) ||
+                  _matchesUploadedPhoto(parsed.imagePath, photoUrl)) {
+                prediction = parsed;
+              }
+            }
+          } on ApiException catch (e) {
+            _pollingTimer?.cancel();
+            _elapsedTimer?.cancel();
+            if (mounted) {
+              setState(() {
+                _stage = _AnalysisStage.error;
+                _errorMessage = e.message;
+                _isLoadingPrediction = false;
+              });
+            }
+            return;
+          }
+
+          final hasMatchedPrediction = prediction != null;
+          if (hasMatchedPhoto && hasMatchedPrediction) {
+            _pollingTimer?.cancel();
             _elapsedTimer?.cancel();
             // Perbarui LiveStore agar Dashboard & halaman lain ikut update
             await LiveStore.instance.refresh();
@@ -145,32 +196,28 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
               setState(() {
                 _stage = _AnalysisStage.completed;
                 _resultStatus = statusRes;
+                _latestPrediction = prediction;
+                _isLoadingPrediction = false;
               });
               widget.onCompleted?.call();
             }
             return;
           }
-
-          if (attempts >= maxAttempts) {
-            timer.cancel();
-            _elapsedTimer?.cancel();
-            await LiveStore.instance.refresh();
-            if (mounted) {
-              setState(() {
-                _stage = _AnalysisStage.timeout;
-                _resultStatus = statusRes;
-              });
-            }
-          }
-        } catch (_) {
-          if (attempts >= maxAttempts) {
-            timer.cancel();
-            _elapsedTimer?.cancel();
-            if (mounted) {
-              setState(() => _stage = _AnalysisStage.timeout);
-            }
-          }
+        } catch (e) {
+          debugPrint('Gagal mengecek hasil analisis: $e');
+        } finally {
+          _statusCheckInProgress = false;
         }
+      }
+
+      await checkStatus();
+      if (!mounted ||
+          _stage == _AnalysisStage.completed ||
+          _stage == _AnalysisStage.error) {
+        return;
+      }
+      _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+        checkStatus();
       });
     } on ApiException catch (e) {
       _pollingTimer?.cancel();
@@ -187,7 +234,8 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
       if (mounted) {
         setState(() {
           _stage = _AnalysisStage.error;
-          _errorMessage = 'Gagal mengunggah foto. Pastikan koneksi ke server stabil.';
+          _errorMessage =
+              'Gagal mengunggah foto. Pastikan koneksi ke server stabil.';
         });
       }
     }
@@ -281,14 +329,12 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
           icon: Icons.psychology_rounded,
           iconColor: Colors.deepPurple,
           showSpinner: true,
-          extraInfo: 'Waktu proses: $_secondsElapsed detik\nModel Keras sedang mengklasifikasikan kelas penyakit di server.',
+          extraInfo:
+              'Waktu proses: $_secondsElapsed detik\nModel Keras sedang mengklasifikasikan kelas penyakit di server.',
         );
 
       case _AnalysisStage.completed:
         return _buildCompletedView();
-
-      case _AnalysisStage.timeout:
-        return _buildTimeoutView();
 
       case _AnalysisStage.error:
         return _buildErrorView();
@@ -355,7 +401,8 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
             child: Text(
               extraInfo,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: AppColors.muted, height: 1.4),
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.muted, height: 1.4),
             ),
           ),
         ],
@@ -372,12 +419,14 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
 
   Widget _buildCompletedView() {
     final status = _resultStatus ?? LiveStore.instance.status ?? {};
-    final decision = (status['decision'] as Map?)?.cast<String, dynamic>() ?? {};
+    final decision =
+        (status['decision'] as Map?)?.cast<String, dynamic>() ?? {};
     final cnnLabel = decision['cnn_label']?.toString() ?? 'Analisis Selesai';
     final confidence = decision['cnn_confidence'] as num? ?? 0.0;
     final symptomScore = decision['cnn_symptom_score'] as num? ?? 0.0;
     final tingkatDosis = decision['tingkat_dosis']?.toString() ?? 'AMAN';
-    final statusMitigasi = decision['status_mitigasi']?.toString() ?? 'Mitigasi diterapkan';
+    final statusMitigasi =
+        decision['status_mitigasi']?.toString() ?? 'Mitigasi diterapkan';
     final dosisRekomendasi = decision['dosis_rekomendasi_ml'] as num? ?? 0.0;
     final dosisAktual = decision['dosis_ml'] as num? ?? 0.0;
     final sisaCooldown = decision['sisa_cooldown_detik'] as num? ?? 0;
@@ -397,7 +446,8 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
                 color: Colors.green.o(0.14),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
+              child: const Icon(Icons.check_circle_rounded,
+                  color: Colors.green, size: 28),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -412,7 +462,8 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
                       color: AppColors.ink,
                     ),
                   ),
-                  Text('Keras CNN & Fuzzy Inference Mamdani', style: AppText.caption),
+                  Text('Keras CNN & Fuzzy Inference Mamdani',
+                      style: AppText.caption),
                 ],
               ),
             ),
@@ -454,16 +505,24 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('HASIL KLASIFIKASI CNN',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.muted, letterSpacing: 1.1)),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.muted,
+                          letterSpacing: 1.1)),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFC084FC).o(0.18),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '${LiveStore.fmt(confidence)}% Akurasi',
-                      style: const TextStyle(color: Color(0xFFC084FC), fontSize: 12, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          color: Color(0xFFC084FC),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
@@ -480,11 +539,15 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.speed_rounded, size: 16, color: AppColors.muted),
+                  const Icon(Icons.speed_rounded,
+                      size: 16, color: AppColors.muted),
                   const SizedBox(width: 6),
                   Text(
                     'Skor Gejala Layu: ${LiveStore.fmt(symptomScore)}%',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.muted),
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.muted),
                   ),
                 ],
               ),
@@ -508,16 +571,24 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('REKOMENDASI FUZZY',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.muted, letterSpacing: 1.1)),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.muted,
+                          letterSpacing: 1.1)),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
                       color: tColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       tingkatDosis.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800),
                     ),
                   ),
                 ],
@@ -525,7 +596,10 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
               const SizedBox(height: 10),
               Text(
                 statusMitigasi,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.ink),
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink),
               ),
               const SizedBox(height: 10),
               Row(
@@ -533,11 +607,15 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.science_rounded, size: 18, color: AppColors.primary),
+                      const Icon(Icons.science_rounded,
+                          size: 18, color: AppColors.primary),
                       const SizedBox(width: 8),
                       Text(
                         'Rekomendasi: ${LiveStore.fmt(dosisRekomendasi)} ml',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary),
                       ),
                     ],
                   ),
@@ -546,7 +624,8 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: dosisAktual > 0 ? Colors.green : Colors.grey.shade600,
+                      color:
+                          dosisAktual > 0 ? Colors.green : Colors.grey.shade600,
                     ),
                   ),
                 ],
@@ -554,19 +633,24 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
               if (sisaCooldown > 0) ...[
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.blueGrey.o(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.timer_outlined, size: 16, color: Colors.blueGrey),
+                      const Icon(Icons.timer_outlined,
+                          size: 16, color: Colors.blueGrey),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Pompa OFF (Masa Cooldown ${(sisaCooldown / 3600).toStringAsFixed(1)} jam aktif untuk melindungi akar cabai dari overdosis).',
-                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.ink),
+                          style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.ink),
                         ),
                       ),
                     ],
@@ -597,12 +681,16 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
                   children: [
                     const Text(
                       'Tindakan yang Disarankan',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.ink),
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _getMitigationAdvice(tingkatDosis),
-                      style: const TextStyle(fontSize: 12.5, color: AppColors.muted, height: 1.45),
+                      style: const TextStyle(
+                          fontSize: 12.5, color: AppColors.muted, height: 1.45),
                     ),
                   ],
                 ),
@@ -610,46 +698,152 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
             ],
           ),
         ),
+        // ═════════════════════════════════════════════════════════════════
+        // HASIL KEDUA: KLASIFIKASI PENYAKIT CABAI (YOLO / SEGMENTASI)
+        // ═════════════════════════════════════════════════════════════════
         const SizedBox(height: 24),
+        Container(
+          width: double.infinity,
+          height: 1,
+          color: Colors.white.o(0.12),
+        ),
+        const SizedBox(height: 20),
+
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.o(0.14),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.biotech_rounded,
+                  color: AppColors.primary, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hasil Klasifikasi Penyakit Cabai',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  Text('Model Segmentasi & Rekonstruksi Citra Daun',
+                      style: AppText.caption),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        if (_isLoadingPrediction) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white.o(0.04),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.o(0.08)),
+            ),
+            child: const Center(
+              child: Column(
+                children: [
+                  CircularProgressIndicator(
+                      strokeWidth: 2.5, color: AppColors.primary),
+                  SizedBox(height: 12),
+                  Text(
+                    'Memuat hasil klasifikasi penyakit cabai...',
+                    style: TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ] else if (_latestPrediction != null) ...[
+          PredictionCard(
+            item: _latestPrediction!,
+            isLatest: true,
+          ),
+        ] else ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.o(0.04),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.o(0.08)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline_rounded,
+                    size: 20, color: AppColors.muted),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Data klasifikasi penyakit cabai belum tersedia di server.',
+                    style: TextStyle(fontSize: 12.5, color: AppColors.muted),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 18),
+
+        // Tombol Buka Halaman Hasil & Riwayat Lengkap
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    body: Stack(
+                      children: [
+                        const FarmBackground(),
+                        const ResultsPage(),
+                        Positioned(
+                          top: 48,
+                          left: 16,
+                          child: GlassIconButton(
+                            icon: Icons.arrow_back_rounded,
+                            onTap: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.history_rounded, size: 18),
+            label: const Text(
+              'Buka Halaman Hasil & Riwayat Lengkap',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.ink,
+              side: BorderSide(color: Colors.white.o(0.18)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18)),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 14),
 
         // Tombol Selesai
         PillButton(
           label: 'Selesai & Buka Dashboard',
           icon: Icons.check_circle_outline_rounded,
-          onTap: () => Navigator.of(context).pop(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimeoutView() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: Colors.amber.o(0.16),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.hourglass_top_rounded, color: Colors.amber, size: 32),
-        ),
-        const SizedBox(height: 18),
-        const Text(
-          'Foto Berhasil Terunggah',
-          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.ink),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Proses inferensi Keras sedang berlangsung di antrian server. Hasil terbaru akan otomatis terbarui di layar Dashboard dalam beberapa saat.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: AppColors.muted, height: 1.45),
-        ),
-        const SizedBox(height: 24),
-        PillButton(
-          label: 'Kembali ke Dashboard',
-          icon: Icons.dashboard_rounded,
           onTap: () => Navigator.of(context).pop(),
         ),
       ],
@@ -667,18 +861,21 @@ class _AnalysisBottomSheetState extends State<AnalysisBottomSheet> {
             color: Colors.red.o(0.12),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.error_outline_rounded, color: Colors.red, size: 34),
+          child: const Icon(Icons.error_outline_rounded,
+              color: Colors.red, size: 34),
         ),
         const SizedBox(height: 18),
         const Text(
           'Gagal Menganalisis',
-          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.ink),
+          style: TextStyle(
+              fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.ink),
         ),
         const SizedBox(height: 8),
         Text(
           _errorMessage ?? 'Terjadi kesalahan saat menghubungi server.',
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 13, color: AppColors.muted, height: 1.45),
+          style: const TextStyle(
+              fontSize: 13, color: AppColors.muted, height: 1.45),
         ),
         const SizedBox(height: 24),
         PillButton(

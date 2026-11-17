@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../pages/chat_page.dart';
 import '../pages/dashboard_page.dart';
 import '../pages/detection_page.dart';
 import '../pages/history_page.dart';
@@ -36,6 +37,7 @@ class _MainScreenState extends State<MainScreen> {
     DetectionPage(),
     HistoryPage(),
     MitigationPage(),
+    ChatPage(),
     ProfilePage(),
   ];
 

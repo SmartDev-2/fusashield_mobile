@@ -8,12 +8,15 @@ import '../services/live_store.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
 import '../widgets/analysis_bottom_sheet.dart';
+import '../widgets/farm_background.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/glass_group.dart';
+import '../widgets/glass_icon_button.dart';
 import '../widgets/list_row.dart';
 import '../widgets/page_layout.dart';
 import '../widgets/pill_button.dart';
 import '../widgets/show_info.dart';
+import 'results_page.dart';
 
 class DetectionPage extends StatefulWidget {
   const DetectionPage({super.key});
@@ -165,6 +168,72 @@ class _DetectionPageState extends State<DetectionPage> {
                     style: PillStyle.glass,
                     onTap: () => _handleImageSelection(ImageSource.gallery),
                   ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            // Card Shortcut ke Hasil & Riwayat Klasifikasi Penyakit Cabai
+            GlassCard(
+              radius: 24,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      body: Stack(
+                        children: [
+                          const FarmBackground(),
+                          const ResultsPage(),
+                          Positioned(
+                            top: 48,
+                            left: 16,
+                            child: GlassIconButton(
+                              icon: Icons.arrow_back_rounded,
+                              onTap: () => Navigator.of(context).pop(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.o(0.16),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.primary.o(0.30)),
+                    ),
+                    child: const Icon(Icons.biotech_rounded, color: AppColors.primary, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hasil & Riwayat Klasifikasi',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Lihat gambar praproses, segmentasi, rekonstruksi & rekomendasi penyakit.',
+                          style: AppText.caption,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.muted, size: 16),
                 ],
               ),
             ),

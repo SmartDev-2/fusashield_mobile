@@ -31,6 +31,7 @@ class GlassTabBar extends StatelessWidget {
     ),
     _TabItem(Icons.insights_outlined, Icons.insights_rounded, 'Riwayat'),
     _TabItem(Icons.eco_outlined, Icons.eco_rounded, 'Mitigasi'),
+    _TabItem(Icons.smart_toy_outlined, Icons.smart_toy_rounded, 'FusaBot'),
     _TabItem(Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
   ];
 
